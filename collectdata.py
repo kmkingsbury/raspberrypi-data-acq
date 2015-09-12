@@ -15,22 +15,18 @@ import threading
 import csv
 #import rrdtool
 
-#Sesnsor libraries
 
+#High Res Timer
 
 GPIO.setmode(GPIO.BCM) 
-sensor = 11
-DHpin = 7
+
 SPICLK = 18 #17
 SPIMISO = 23 #24
 SPIMOSI = 24 #25
 SPICS = 25 #27
-humidity_adc = 0
 mybutton = 40
-mywindspeed = 38
-myraingauge = 37
-light_adc = 1
-winddir_adc = 2
+
+
 
 def CtoF(temp):
 	temp = (temp * (9.0/5.0))+32.0
@@ -49,9 +45,9 @@ def ConvertmVolts(data):
 
 
 runner = True
-rain_count = 0
-windspeed_count = 0
-# read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
+#
+
+ read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
 def readadc(adcnum, clockpin, mosipin, misopin, cspin):
         if ((adcnum > 7) or (adcnum < 0)):
                 return -1
@@ -89,11 +85,6 @@ def readadc(adcnum, clockpin, mosipin, misopin, cspin):
 
 
 
-# RRD 
-#from rrdtool import update as rrd_update
-#ret = rrd_update('example.rrd', 'N:%s:%s' %(metric1, metric2));
-
-# Main Loop
 if __name__ == '__main__':
 
 
@@ -106,9 +97,6 @@ if __name__ == '__main__':
   GPIO.setup(SPIMISO, GPIO.IN)
   GPIO.setup(SPICLK, GPIO.OUT)
   GPIO.setup(SPICS, GPIO.OUT)
-
-
-  
  
   try:
     while (runner == True):
@@ -120,7 +108,7 @@ if __name__ == '__main__':
 
 
 
-      value1 = CtoF(ConvertTemp(ConvertmVolts(readadc(humidity_adc, SPICLK, SPIMOSI, SPIMISO, SPICS))))
+      value1 = CtoF(ConvertTemp(ConvertmVolts(readadc(0, SPICLK, SPIMOSI, SPIMISO, SPICS))))
       value2 = CtoF(ConvertTemp(ConvertmVolts(readadc(1, SPICLK, SPIMOSI, SPIMISO, SPICS))))
       value3 = CtoF(ConvertTemp(ConvertmVolts(readadc(2, SPICLK, SPIMOSI, SPIMISO, SPICS))))
       #print value1, value2, value3
