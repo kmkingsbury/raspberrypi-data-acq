@@ -24,8 +24,12 @@ SPICLK = 18 #17
 SPIMISO = 23 #24
 SPIMOSI = 24 #25
 SPICS = 25 #27
-mybutton = 40
 
+# set up the SPI interface pins
+GPIO.setup(SPIMOSI, GPIO.OUT)
+GPIO.setup(SPIMISO, GPIO.IN)
+GPIO.setup(SPICLK, GPIO.OUT)
+GPIO.setup(SPICS, GPIO.OUT)
 
 
 def CtoF(temp):
@@ -47,7 +51,7 @@ def ConvertmVolts(data):
 runner = True
 #
 
- read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
+# read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
 def readadc(adcnum, clockpin, mosipin, misopin, cspin):
         if ((adcnum > 7) or (adcnum < 0)):
                 return -1
@@ -107,11 +111,13 @@ if __name__ == '__main__':
       timenow = strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
 
-
-      value1 = CtoF(ConvertTemp(ConvertmVolts(readadc(0, SPICLK, SPIMOSI, SPIMISO, SPICS))))
-      value2 = CtoF(ConvertTemp(ConvertmVolts(readadc(1, SPICLK, SPIMOSI, SPIMISO, SPICS))))
-      value3 = CtoF(ConvertTemp(ConvertmVolts(readadc(2, SPICLK, SPIMOSI, SPIMISO, SPICS))))
-      #print value1, value2, value3
+      v1 = readadc(0, SPICLK, SPIMOSI, SPIMISO, SPICS)	
+      value1 = CtoF(ConvertTemp(ConvertmVolts(v1)))
+      v2 = readadc(1,  SPICLK, SPIMOSI, SPIMISO, SPICS)
+      value2 = CtoF(ConvertTemp(ConvertmVolts(v2)))
+      v3 = readadc(2, SPICLK, SPIMOSI, SPIMISO, SPICS)
+      value3 = CtoF(ConvertTemp(ConvertmVolts(v3)))
+      print "Raw V1: 1:"+ str(v1) + " V2:"+  str(v2)+ " V3:"+  str(v3)
 
 #      print "Vals: 1:"+ str(fahrenheittemp) + " 2:"+  str(value2) + " 3:" + str(value3)
 
@@ -123,7 +129,7 @@ if __name__ == '__main__':
       csv.writerow(data)
          
       #Sleep
-      time.sleep(.05) #set to whatever
+      time.sleep(.5) #set to whatever
 
   except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     print "\nKilling Thread..."    
