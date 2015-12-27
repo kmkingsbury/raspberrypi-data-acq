@@ -119,6 +119,7 @@ channels = 4;
 if args.channels: channels = int(args.channels[0])
 if args.debug: print "Channels: " + str(channels)
 
+# Outfile
 outfile = 'test.csv'
 if args.outfile: outfile = args.outfile[0]
 if args.debug: print "Outfile: " + outfile
@@ -184,6 +185,8 @@ if __name__ == '__main__':
       for val in range(0,channels):
        if args.debug: print "Val:" + str(val)
        rawvalues[val] = readadc(val, SPICLK, SPIMOSI, SPIMISO, SPICS)
+
+       # Convert raw value to something else if specificed in type option.
        if datatype[(val)] == 'ftemp':
          values[val] = CtoF(ConvertTemp(ConvertmVolts(rawvalues[val])))
        elif datatype[(val)] == 'ctemp':
