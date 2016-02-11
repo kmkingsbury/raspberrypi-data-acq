@@ -36,10 +36,10 @@ SPICS = 25 #27
 # Parse Args:
 def mainargs(argv):
   parser = argparse.ArgumentParser(description='Collects Data on a Raspberry Pi 2 B+.',
-  formatter_class=SmartFormatter
+  formatter_class=SmartFormatter, epilog="Example 3 channel of raw and 2 Celsius temperature:\n sudo python ./collectdata.py -c 3 -t raw ctemp ctemp"
   )
   parser.add_argument('-s', '--sleep', type=float, nargs=1, required=False,
-                   help='Time to sleep between measurements')
+                   help='Time (seconds) to sleep between measurements')
   parser.add_argument('-c', '--channels', type=int, nargs=1, required=False,
                  help='Number of channels to record')
   parser.add_argument('-o', '--outfile', nargs=1, required=False,
