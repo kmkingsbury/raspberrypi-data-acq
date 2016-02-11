@@ -85,6 +85,6 @@ raspberrypi-pin-onoff $ sudo python ./collectdata.py -c 3 -t raw ctemp ctemp
 
 ## License and Authors
 
-Author:: Kevin Kingsbury (<kkingsbury@gmail.com>)
+Author:: Kevin Kingsbury (@kmkingsbury)
 
 Apache 2.0
