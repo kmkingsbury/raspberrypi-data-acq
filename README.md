@@ -60,27 +60,27 @@ Basic Program flow:
 
 Run normally using all defaults:
 ```python
-raspberrypi-pin-onoff $ sudo python ./collectdata.py
+raspberrypi-data-acq $ sudo python ./collectdata.py
 ```
 
 Record data from 4 different sources:
 ```python
-raspberrypi-pin-onoff $ sudo python ./collectdata.py -c 4
+raspberrypi-data-acq $ sudo python ./collectdata.py -c 4
 ```
 
 Record data from 4 different sources at 1/10 of a second intervals:
 ```python
-raspberrypi-pin-onoff $ sudo python ./collectdata.py -c 4 -s 0.1
+raspberrypi-data-acq $ sudo python ./collectdata.py -c 4 -s 0.1
 ```
 
 Record data from 4 different sources at 1/10 of a second intervals, output to mydata.csv in the home directory:
 ```python
-raspberrypi-pin-onoff $ sudo python ./collectdata.py -c 4 -s 0.1 -o ~/mydata.csv
+raspberrypi-data-acq $ sudo python ./collectdata.py -c 4 -s 0.1 -o ~/mydata.csv
 ```
 
 Record data from 3 different sources the first as raw data, Celsius Temperature for the 2nd and 3rd:
 ```python
-raspberrypi-pin-onoff $ sudo python ./collectdata.py -c 3 -t raw ctemp ctemp
+raspberrypi-data-acq $ sudo python ./collectdata.py -c 3 -t raw ctemp ctemp
 ```
 
 ## License and Authors
