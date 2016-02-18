@@ -159,9 +159,17 @@ if __name__ == '__main__':
 
   runner = True
 
+  print 'sys:'+ str(sys.argv[0]) + ' ' + str(args) 
+
   # Logger open CSV
-  fp = open(outfile, 'a')
+  fp = open(outfile, 'w')
+  fp.write('# Input parameters: '+ str(sys.argv[0]) + ' ' + str(args) + '\n')
+
+  writer = csv.DictWriter(fp, fieldnames = ['datetime']+ datatype, delimiter=',')
+  writer.writeheader()
   csv = csv.writer(fp, delimiter=',')
+
+
 
   # set up the SPI interface pins
   GPIO.setup(SPIMOSI, GPIO.OUT)
