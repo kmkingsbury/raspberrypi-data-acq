@@ -43,7 +43,9 @@ def mainargs(argv):
   parser.add_argument('-c', '--channels', type=int, nargs=1, required=False,
                  help='Number of channels to record')
   parser.add_argument('-o', '--outfile', nargs=1, required=False,
-               help='CSV Outfile to use')
+               help='Outfile to use')
+  parser.add_argument('-g', '--gnuplot', action='store_true', required=False,
+               help='Print the outputfile in gnuplot format (tabs) instead of CSV')
   parser.add_argument('-d', '--debug', action='store_true', required=False,
                help='Print Debug messages')
   parser.add_argument('-t', '--type', type=str, nargs='+', required=False, choices=['raw', 'ctemp', 'ftemp'],
@@ -121,6 +123,7 @@ if args.debug: print "Channels: " + str(channels)
 
 # Outfile
 outfile = 'test.csv'
+if args.gnuplot: outfile = "test.dat"
 if args.outfile: outfile = args.outfile[0]
 if args.debug: print "Outfile: " + outfile
 
@@ -165,10 +168,12 @@ if __name__ == '__main__':
   fp = open(outfile, 'w')
   fp.write('# Input parameters: '+ str(sys.argv[0]) + ' ' + str(args) + '\n')
 
-  writer = csv.DictWriter(fp, fieldnames = ['datetime']+ datatype, delimiter=',')
-  writer.writeheader()
-  csv = csv.writer(fp, delimiter=',')
 
+  if args.gnuplot == False: 
+    writer = csv.DictWriter(fp, fieldnames = ['datetime']+ datatype, delimiter=',')
+    writer.writeheader()
+    csv = csv.writer(fp, delimiter=',')
+  
 
 
   # set up the SPI interface pins
@@ -217,6 +222,7 @@ if __name__ == '__main__':
 
       #Record to CSV
       csv.writerow(data)
+
 
       #Sleep
       time.sleep(sleeptime)
