@@ -19,6 +19,7 @@ Push Buttons (green, black, red, blue)|4|$6.98 (for 10 in one color)| http://amz
 5 way navigation button |1|$2.95 | https://www.adafruit.com/products/504
 Poteniometer |1 | $1.25|https://www.adafruit.com/products/356
 LCD 16x2 Char Display |1|$15.95 |https://www.sparkfun.com/products/709
+3 pin polarized connector (Male & Female) | 4| $0.50| http://www.kr4.us/polarized-connectors-housing-3-pin.html
 
 ----
 ## Assorted Odds &amp; Ends on Hand
