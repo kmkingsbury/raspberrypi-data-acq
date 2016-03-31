@@ -15,6 +15,8 @@ import threading
 import csv
 #import rrdtool
 import sys, argparse
+import ConfigParser
+import re
 
 
 class SmartFormatter(argparse.HelpFormatter):
@@ -28,10 +30,6 @@ class SmartFormatter(argparse.HelpFormatter):
 
 GPIO.setmode(GPIO.BCM)
 
-SPICLK = 18 #17
-SPIMISO = 23 #24
-SPIMOSI = 24 #25
-SPICS = 25 #27
 
 # Parse Args:
 def mainargs(argv):
@@ -40,10 +38,12 @@ def mainargs(argv):
   )
   parser.add_argument('-s', '--sleep', type=float, nargs=1, required=False,
                    help='Time (seconds) to sleep between measurements')
-  parser.add_argument('-c', '--channels', type=int, nargs=1, required=False,
+  parser.add_argument('-n', '--channels', type=int, nargs=1, required=False,
                  help='Number of channels to record')
   parser.add_argument('-o', '--outfile', nargs=1, required=False,
                help='Outfile to use')
+  parser.add_argument('-c', '--config', nargs=1, required=False,
+                            help='Config File to use')
   parser.add_argument('-g', '--gnuplot', action='store_true', required=False,
                help='Print the outputfile in gnuplot format (tabs) instead of CSV')
   parser.add_argument('-d', '--debug', action='store_true', required=False,
@@ -129,6 +129,10 @@ outfile = 'test.csv'
 if args.gnuplot: outfile = "test.dat"
 if args.outfile: outfile = args.outfile[0]
 if args.debug: print "Outfile: " + outfile
+filewoext = re.split('(.*)\.\w', outfile)
+#print filewoext[1]
+metafile = filewoext[1] +".md"
+if args.debug: print "Metafile: "+ metafile
 
 # This is all matching the datatypes and getting the correct array sizes
 types = []
@@ -159,6 +163,16 @@ datatype = datatype[:(channels)]
 if args.debug: print "Types: " + '[%s]' % ', '.join(map(str, types))
 if args.debug: print "DataTypes: " + '[%s]' % ', '.join(map(str, datatype))
 
+# Config File
+configfile = 'config.ini'
+if args.config: config = args.config[0]
+if args.debug: print "Config file: " + str(configfile)
+
+
+config = ConfigParser.ConfigParser()
+config.read(configfile)
+
+
 
 
 if __name__ == '__main__':
@@ -184,10 +198,10 @@ if __name__ == '__main__':
     csv = csv.writer(fp, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC, quotechar='\'')
 
   # set up the SPI interface pins
-  GPIO.setup(SPIMOSI, GPIO.OUT)
-  GPIO.setup(SPIMISO, GPIO.IN)
-  GPIO.setup(SPICLK, GPIO.OUT)
-  GPIO.setup(SPICS, GPIO.OUT)
+  GPIO.setup(config.get('AD MCP3008', 'SPIMOSI', 0), GPIO.OUT)
+  GPIO.setup(config.get('AD MCP3008', 'SPIMISO', 0), GPIO.IN)
+  GPIO.setup(config.get('AD MCP3008', 'SPICLK', 0), GPIO.OUT)
+  GPIO.setup(config.get('AD MCP3008', 'SPICS', 0), GPIO.OUT)
 
   try:
     while (runner == True):
@@ -205,7 +219,7 @@ if __name__ == '__main__':
       values = [0] * 8
       for val in range(0,channels):
        if args.debug: print "Val:" + str(val)
-       rawvalues[val] = readadc(val, SPICLK, SPIMOSI, SPIMISO, SPICS)
+       rawvalues[val] = readadc(val, config.get('AD MCP3008', 'SPICLK', 0), config.get('AD MCP3008', 'SPMOSI', 0), config.get('AD MCP3008', 'SPIMISO', 0), config.get('AD MCP3008', 'SPICS', 0))
 
        # Convert raw value to something else if specificed in type option.
        if datatype[(val)] == 'ftemp':
