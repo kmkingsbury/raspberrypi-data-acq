@@ -108,6 +108,9 @@ def readadc(adcnum, clockpin, mosipin, misopin, cspin):
         adcout >>= 1       # first bit is 'null' so drop it
         return adcout
 
+rawargs = ' '.join (sys.argv)
+#print "Raw: "+ rawargs
+
 # Parse Args, handle options
 args = mainargs(sys.argv[1:])
 
@@ -162,19 +165,23 @@ if __name__ == '__main__':
 
   runner = True
 
-  print 'sys:'+ str(sys.argv[0]) + ' ' + str(args) 
+  print 'sys:'+ str(sys.argv[0]) + ' ' + str(args)
 
   # Logger open CSV
   fp = open(outfile, 'w')
   fp.write('# Input parameters: '+ str(sys.argv[0]) + ' ' + str(args) + '\n')
+  fp.write('# Datetime\t\t')
+  for x in range(1, channels):
+      fp.write("\t Ch"+str(x))
+  fp.write("\n")
 
-
-  if args.gnuplot == False: 
+  cvs = None
+  if args.gnuplot == False:
     writer = csv.DictWriter(fp, fieldnames = ['datetime']+ datatype, delimiter=',')
     writer.writeheader()
-    csv = csv.writer(fp, delimiter=',')
-  
-
+    csv = csv.writer(fp, delimiter=',', quoting=csv.QUOTE_ALL)
+  else:
+    csv = csv.writer(fp, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC, quotechar='\'')
 
   # set up the SPI interface pins
   GPIO.setup(SPIMOSI, GPIO.OUT)
@@ -190,8 +197,9 @@ if __name__ == '__main__':
       mynow = str(time.time())
       timenow = strftime("%Y-%m-%d %H:%M:%S", gmtime())
       dec = mynow.split(".")
-      timenow += "."+dec[1]
 
+      #this is a dumb way to get zero padded decimal seconds
+      timenow += "."+format(float("."+dec[1]), '.2f').split('.')[1]
       data = [ timenow,0,0,0,0,0,0,0,0 ]
       rawvalues = [0] * 8
       values = [0] * 8
@@ -220,7 +228,7 @@ if __name__ == '__main__':
       print "Data: ",
       print (data)
 
-      #Record to CSV
+      #Record to File
       csv.writerow(data)
 
 
