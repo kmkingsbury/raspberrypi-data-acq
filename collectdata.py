@@ -125,8 +125,8 @@ if args.channels: channels = int(args.channels[0])
 if args.debug: print "Channels: " + str(channels)
 
 # Outfile
-outfile = 'test.csv'
-if args.gnuplot: outfile = "test.dat"
+outfile = "data-"+strftime("%Y-%m-%d_%H%M%S", gmtime())+".csv"
+if args.gnuplot: outfile = "data-"+strftime("%Y-%m-%d_%H%M%S", gmtime())+".dat"
 if args.outfile: outfile = args.outfile[0]
 if args.debug: print "Outfile: " + outfile
 filewoext = re.split('(.*)\.\w', outfile)
