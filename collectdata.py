@@ -82,7 +82,44 @@ def ConvertmVolts(data):
 	return volts
 
 def buttonEventHandler (pin):
+    global config, fpmeta, displaymode, MKbuttonevents
     print "handling button event: "+str(pin)
+
+    # Match Buttons, Log event:
+    for (each_key, each_val) in config.items('buttons'):
+      if pin == int(each_val):
+        print "here.\n"
+        timenow = highrestime()
+        fpmeta.write(""+each_key + ' Event: '+ timenow + '\n')
+        MKbuttonevents += 1
+        return
+
+    # Match Menu
+    if pin == config.getint('menu', 'up'):
+      displaymode = 'Max'
+      return
+    elif pin == config.getint('menu', 'down'):
+      displaymode = 'Min'
+      return
+    elif pin == config.getint('menu', 'right'):
+      displaymode = 'Avg'
+      return
+    elif pin == config.getint('menu', 'left'):
+      displaymode = 'Dev'
+      return
+    elif pin == config.getint('menu', 'select'):
+      displaymode = 'Reg'
+      return
+
+
+def highrestime():
+    global time
+    mynow = str(time.time())
+    timenow = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    dec = mynow.split(".")
+    #this is a dumb way to get zero padded decimal seconds
+    timenow += "."+format(float("."+dec[1]), '.2f').split('.')[1]
+    return timenow
 
 # read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
 def readadc(adcnum, clockpin, mosipin, misopin, cspin):
@@ -241,25 +278,28 @@ if __name__ == '__main__':
   time.sleep(2)
 
   # Button Setups:
-  GPIO.setup(config.getint('menu', 'up'),
-    GPIO.IN, pull_up_down=GPIO.PUD_UP)
-  GPIO.add_event_detect(config.getint('menu', 'up'),
-    GPIO.FALLING, callback=buttonEventHandler, bouncetime=300)
+  for (each_key, each_val) in config.items('menu'):
+    GPIO.setup(int(each_val), GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(int(each_val),GPIO.FALLING, callback=buttonEventHandler, bouncetime=300)
+
+  for (each_key, each_val) in config.items('buttons'):
+    GPIO.setup(int(each_val), GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(int(each_val), GPIO.FALLING, callback=buttonEventHandler, bouncetime=300)
 
   # Reset count
-  samplecount = 0;
-  MKbuttonevents = 0;
+  samplecount = 0
+  MKbuttonevents = 0
+  lastgmt = 0
+  displaymode = 'Reg'
+  sums = [0,0,0,0];
+  mins = [None, None, None, None]
+  maxs = [None, None, None, None]
+  avgs = [0,0,0,0];
   try:
     while (runner == True):
       #It may take a second or two to get good data
 
-      # Time:
-      mynow = str(time.time())
-      timenow = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-      dec = mynow.split(".")
-
-      #this is a dumb way to get zero padded decimal seconds
-      timenow += "."+format(float("."+dec[1]), '.2f').split('.')[1]
+      timenow = highrestime()
       data = [ timenow,0,0,0,0,0,0,0,0 ]
       rawvalues = [0] * 8
       values = [0] * 8
@@ -279,7 +319,12 @@ if __name__ == '__main__':
        else:
          values[val] = rawvalues[val]
        data[(val+1)] = values[val]
-
+       sums[val] += values[val]
+       if mins[val] == None : mins[val] = values[val]
+       if maxs[val] == None : maxs[val] = values[val]
+       if values[val] < mins[val]: mins[val] = values[val]
+       if values[val] > maxs[val]: maxs[val] = values[val]
+       avgs[val] = sums[val]/(samplecount+1)
       # Prepare and Print the raw values if debug flag set
       rawline = 'Raw '
       for val in range(0,channels):
@@ -287,7 +332,11 @@ if __name__ == '__main__':
       if args.debug: print rawline
 #      print "Vals: 1:"+ str(fahrenheittemp) + " 2:"+  str(value2) + " 3:" + str(value3)
 
+      #trims array to correct size
       data = data[:channels+1]
+      mins = mins[:channels]
+      maxs = maxs[:channels]
+      avgs = avgs[:channels]
       #Output converted values
       print "Data: ",
       print (data)
@@ -295,9 +344,24 @@ if __name__ == '__main__':
       #Record to File
       csv.writerow(data)
 
-      lcd_string(config,"s:"+str(samplecount)+" "+"b:"+str(MKbuttonevents),0x80)
-      ds = '{:>4}{:>4}{:>4}{:>4}'.format(data[1],data[2],data[3],data[4])
-      lcd_string(config,ds,0xC0)
+      # Only update once per second
+      if gmtime() != lastgmt:
+        lcd_string(config,displaymode + " s:"+str(samplecount)+" "+"b:"+str(MKbuttonevents) ,0x80)
+        ds = ''
+        for i in range(0, channels):
+            if displaymode == 'Reg':
+              ds += '{:>4}'.format(data[i+1])
+            elif displaymode == 'Max':
+              ds += '{:>4}'.format(maxs[i])
+            elif displaymode == 'Min':
+              ds += '{:>4}'.format(mins[i])
+            elif displaymode == 'Avg':
+              ds += '{:>4d}'.format(sums[i]/samplecount)
+            elif displaymode == 'Dev':
+              ds += '{:>4d}'.format(abs((avgs)-data[i+1]))
+
+        lcd_string(config,ds,0xC0)
+        lastgmt = gmtime()
 
       #Sleep
       time.sleep(sleeptime)
@@ -312,6 +376,9 @@ if __name__ == '__main__':
   print "Almost done."
   fpmeta.write('Samples: ' + str(samplecount)+ '\n')
   fpmeta.write('ButtonEvents: ' + str(MKbuttonevents)+ '\n')
+  fpmeta.write("Avg: " + '[%s]' % ', '.join(map(str, avgs))+ '\n')
+  fpmeta.write("Maxs: " + '[%s]' % ', '.join(map(str, maxs))+ '\n')
+  fpmeta.write("Mins: " + '[%s]' % ', '.join(map(str, mins))+ '\n')
 
   fp.close()
   fpmeta.close()
