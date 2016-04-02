@@ -1,11 +1,14 @@
 #! /usr/bin/python
-# Based off the code written by Dan Mandle http://dan.mandle.me September 2012
-# Modified by Kevin Kingsbury: https://github.com/kmkingsbury
+# Based off the daemon code written by Dan Mandle http://dan.mandle.me September 2012
+# LCD parts from 16x2 LCD Test Script
+# which is written by : Matt Hawkins 06/04/2015 (http://www.raspberrypi-spy.co.uk/)
+#
+# The Rest by Kevin Kingsbury: https://github.com/kmkingsbury
 # License: Apache 2.0
 
 import os
 from daemon import Daemon
-
+from subprocess import *
 import RPi.GPIO as GPIO
 
 import time
@@ -18,6 +21,9 @@ import sys, argparse
 import ConfigParser
 import re
 
+from ssc_lcd import *
+
+version = 0.1
 
 class SmartFormatter(argparse.HelpFormatter):
 
@@ -27,7 +33,7 @@ class SmartFormatter(argparse.HelpFormatter):
             return text[2:].splitlines()
         return argparse.HelpFormatter._split_lines(self, text, width)
 
-
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
 
@@ -56,7 +62,10 @@ def mainargs(argv):
   args = parser.parse_args()
   return args
 
-
+def run_cmd(cmd):
+    p = Popen(cmd, shell=True, stdout=PIPE)
+    output = p.communicate()[0]
+    return output
 
 def CtoF(temp):
 	temp = (temp * (9.0/5.0))+32.0
@@ -72,6 +81,8 @@ def ConvertmVolts(data):
 	volts = round(volts, 4)
 	return volts
 
+def buttonEventHandler (pin):
+    print "handling button event: "+str(pin)
 
 # read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
 def readadc(adcnum, clockpin, mosipin, misopin, cspin):
@@ -114,6 +125,14 @@ rawargs = ' '.join (sys.argv)
 # Parse Args, handle options
 args = mainargs(sys.argv[1:])
 
+# Config File
+configfile = 'config.ini'
+if args.config: config = args.config[0]
+if args.debug: print "Config file: " + str(configfile)
+
+config = ConfigParser.ConfigParser()
+config.read(configfile)
+
 # Sleep
 sleeptime = 1;
 if args.sleep: sleeptime = args.sleep[0]
@@ -125,7 +144,7 @@ if args.channels: channels = int(args.channels[0])
 if args.debug: print "Channels: " + str(channels)
 
 # Outfile
-outfile = "data-"+strftime("%Y-%m-%d_%H%M%S", gmtime())+".csv"
+outfile = config.get('general', 'filesavedir', 0) + "data-"+strftime("%Y-%m-%d_%H%M%S", gmtime())+".csv"
 if args.gnuplot: outfile = "data-"+strftime("%Y-%m-%d_%H%M%S", gmtime())+".dat"
 if args.outfile: outfile = args.outfile[0]
 if args.debug: print "Outfile: " + outfile
@@ -163,17 +182,8 @@ datatype = datatype[:(channels)]
 if args.debug: print "Types: " + '[%s]' % ', '.join(map(str, types))
 if args.debug: print "DataTypes: " + '[%s]' % ', '.join(map(str, datatype))
 
-# Config File
-configfile = 'config.ini'
-if args.config: config = args.config[0]
-if args.debug: print "Config file: " + str(configfile)
 
-
-config = ConfigParser.ConfigParser()
-config.read(configfile)
-
-
-
+# put in top level scope, reset in the loop
 
 if __name__ == '__main__':
 
@@ -183,6 +193,15 @@ if __name__ == '__main__':
 
   # Logger open CSV
   fp = open(outfile, 'w')
+  fpmeta = open(metafile, 'w')
+  fpmeta.write('Raw parameters: '+rawargs+ '\n')
+  fpmeta.write('Namespace parameters: '+ str(sys.argv[0]) + ' ' + str(args) + '\n')
+  fpmeta.write('Config file: ' + str(configfile) + '\n')
+  fpmeta.write('Channels: ' + str(channels)+ '\n')
+  fpmeta.write('Sleeptime: ' + str(sleeptime)+ '\n')
+  fpmeta.write("Types: " + '[%s]' % ', '.join(map(str, types))+ '\n')
+  fpmeta.write("DataTypes: " + '[%s]' % ', '.join(map(str, datatype))+ '\n')
+
   fp.write('# Input parameters: '+ str(sys.argv[0]) + ' ' + str(args) + '\n')
   fp.write('# Datetime\t\t')
   for x in range(1, channels):
@@ -198,11 +217,38 @@ if __name__ == '__main__':
     csv = csv.writer(fp, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC, quotechar='\'')
 
   # set up the SPI interface pins
-  GPIO.setup(config.get('AD MCP3008', 'SPIMOSI', 0), GPIO.OUT)
-  GPIO.setup(config.get('AD MCP3008', 'SPIMISO', 0), GPIO.IN)
-  GPIO.setup(config.get('AD MCP3008', 'SPICLK', 0), GPIO.OUT)
-  GPIO.setup(config.get('AD MCP3008', 'SPICS', 0), GPIO.OUT)
+  GPIO.setup(config.getint('AD MCP3008', 'SPIMOSI'), GPIO.OUT)
+  GPIO.setup(config.getint('AD MCP3008', 'SPIMISO'), GPIO.IN)
+  GPIO.setup(config.getint('AD MCP3008', 'SPICLK'), GPIO.OUT)
+  GPIO.setup(config.getint('AD MCP3008', 'SPICS'), GPIO.OUT)
 
+  GPIO.setup(config.getint('lcd', 'LCD_RS'), GPIO.OUT)
+  GPIO.setup(config.getint('lcd', 'LCD_E'), GPIO.OUT)
+  GPIO.setup(config.getint('lcd', 'LCD_D4'), GPIO.OUT)
+  GPIO.setup(config.getint('lcd', 'LCD_D5'), GPIO.OUT)
+  GPIO.setup(config.getint('lcd', 'LCD_D6'), GPIO.OUT)
+  GPIO.setup(config.getint('lcd', 'LCD_D7'), GPIO.OUT)
+
+
+  lcd_init(config)
+  lcd_string(config,"Scrapy Science",0x80)
+  lcd_string(config,"Caddy v"+str(version),0xC0)
+  time.sleep(2)
+  lcd_string(config,strftime("%Y-%m-%d %H:%M", gmtime()),0x80)
+  cmd = "ip addr show wlan0 | grep inet | awk '{print $2}' | cut -d/ -f1 | head -n 1"
+  ipaddr = run_cmd(cmd).strip()
+  lcd_string(config,ipaddr,0xC0)
+  time.sleep(2)
+
+  # Button Setups:
+  GPIO.setup(config.getint('menu', 'up'),
+    GPIO.IN, pull_up_down=GPIO.PUD_UP)
+  GPIO.add_event_detect(config.getint('menu', 'up'),
+    GPIO.FALLING, callback=buttonEventHandler, bouncetime=300)
+
+  # Reset count
+  samplecount = 0;
+  MKbuttonevents = 0;
   try:
     while (runner == True):
       #It may take a second or two to get good data
@@ -219,7 +265,11 @@ if __name__ == '__main__':
       values = [0] * 8
       for val in range(0,channels):
        if args.debug: print "Val:" + str(val)
-       rawvalues[val] = readadc(val, config.get('AD MCP3008', 'SPICLK', 0), config.get('AD MCP3008', 'SPMOSI', 0), config.get('AD MCP3008', 'SPIMISO', 0), config.get('AD MCP3008', 'SPICS', 0))
+       rawvalues[val] = readadc(val,
+        config.getint('AD MCP3008', 'SPICLK'),
+        config.getint('AD MCP3008', 'SPIMOSI'),
+        config.getint('AD MCP3008', 'SPIMISO'),
+        config.getint('AD MCP3008', 'SPICS'))
 
        # Convert raw value to something else if specificed in type option.
        if datatype[(val)] == 'ftemp':
@@ -241,10 +291,13 @@ if __name__ == '__main__':
       #Output converted values
       print "Data: ",
       print (data)
-
+      samplecount += 1
       #Record to File
       csv.writerow(data)
 
+      lcd_string(config,"s:"+str(samplecount)+" "+"b:"+str(MKbuttonevents),0x80)
+      ds = '{:>4}{:>4}{:>4}{:>4}'.format(data[1],data[2],data[3],data[4])
+      lcd_string(config,ds,0xC0)
 
       #Sleep
       time.sleep(sleeptime)
@@ -252,8 +305,16 @@ if __name__ == '__main__':
   except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     print "\nKilling Thread..."
     runner = False
+    lcd_byte(config,0x01, config.getboolean('lcd', 'LCD_CMD'))
+    lcd_string(config,"Goodbye",0x80)
+    lcd_string(config,ipaddr,0xC0)
+    #lcd_string(config,"Goodbye!",0xC0)
   print "Almost done."
+  fpmeta.write('Samples: ' + str(samplecount)+ '\n')
+  fpmeta.write('ButtonEvents: ' + str(MKbuttonevents)+ '\n')
+
   fp.close()
+  fpmeta.close()
   GPIO.cleanup()
   print "Done.\nExiting."
   exit();

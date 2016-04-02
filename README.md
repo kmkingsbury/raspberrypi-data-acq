@@ -83,6 +83,12 @@ Record data from 3 different sources the first as raw data, Celsius Temperature 
 raspberrypi-data-acq $ sudo python ./collectdata.py -c 3 -t raw ctemp ctemp
 ```
 
+```sudo apt-get install usbmount```
+Configure in /etc/usbmount/usbmount.conf
+$ sudo umount /dev/sda1
+$ sudo mkfs.ext4 /dev/sda1
+$ sudo chown pi.pi /media/usb0/
+
 ## License and Authors
 
 Author:: Kevin Kingsbury (@kmkingsbury)
