@@ -40,7 +40,7 @@ GPIO.setmode(GPIO.BCM)
 # Parse Args:
 def mainargs(argv):
   parser = argparse.ArgumentParser(description='Collects Data on a Raspberry Pi 2 B+.',
-  formatter_class=SmartFormatter, epilog="Example 3 channel of raw and 2 Celsius temperature:\n sudo python ./collectdata.py -c 3 -t raw ctemp ctemp"
+  formatter_class=SmartFormatter, epilog="Example 3 channel of raw and 2 Celsius temperature:\n sudo python ./collectdata.py -n 3 -t raw ctemp ctemp"
   )
   parser.add_argument('-s', '--sleep', type=float, nargs=1, required=False,
                    help='Time (seconds) to sleep between measurements')
@@ -82,15 +82,15 @@ def ConvertmVolts(data):
 	return volts
 
 def buttonEventHandler (pin):
-    global config, fpmeta, displaymode, MKbuttonevents
+    global config, fpmeta, displaymode, MKbuttonevents, data
     print "handling button event: "+str(pin)
 
     # Match Buttons, Log event:
     for (each_key, each_val) in config.items('buttons'):
       if pin == int(each_val):
-        print "here.\n"
+        #print "here.\n"
         timenow = highrestime()
-        fpmeta.write(""+each_key + ' Event: '+ timenow + '\n')
+        fpmeta.write(""+each_key + ' Event: '+ timenow + ', '.join(map(str, data)) + '\n')
         MKbuttonevents += 1
         return
 

@@ -4,12 +4,12 @@ import time
 def lcd_init(config):
 
    # Initialise display
-   lcd_byte(config,0x33,config.getint('lcd', 'LCD_D4')) # 110011 Initialise
-   lcd_byte(config,0x32,config.getint('lcd', 'LCD_D4')) # 110010 Initialise
-   lcd_byte(config,0x06,config.getint('lcd', 'LCD_D4')) # 000110 Cursor move direction
-   lcd_byte(config,0x0C,config.getint('lcd', 'LCD_D4')) # 001100 Display On,Cursor Off, Blink Off
-   lcd_byte(config,0x28,config.getint('lcd', 'LCD_D4')) # 101000 Data length, number of lines, font size
-   lcd_byte(config,0x01,config.getint('lcd', 'LCD_D4')) # 000001 Clear display
+   lcd_byte(config,0x33,config.getboolean('lcd', 'LCD_CMD')) # 110011 Initialise
+   lcd_byte(config,0x32,config.getboolean('lcd', 'LCD_CMD')) # 110010 Initialise
+   lcd_byte(config,0x06,config.getboolean('lcd', 'LCD_CMD')) # 000110 Cursor move direction
+   lcd_byte(config,0x0C,config.getboolean('lcd', 'LCD_CMD')) # 001100 Display On,Cursor Off, Blink Off
+   lcd_byte(config,0x28,config.getboolean('lcd', 'LCD_CMD')) # 101000 Data length, number of lines, font size
+   lcd_byte(config,0x01,config.getboolean('lcd', 'LCD_CMD')) # 000001 Clear display
    time.sleep(config.getfloat('lcd', 'E_DELAY'))
 
 

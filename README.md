@@ -20,9 +20,19 @@ Raspberry Pi 2 B+
     <td>Time to sleep between measurements. Like a polling frequency, if set to 1 it will take a new measurement roughly every second, .5 is every half second, etc.</td>
   </tr>
   <tr>
-    <td><tt>-c,--channels</tt></td>
+    <td><tt>-n,--channels</tt></td>
     <td>Integer</td>
     <td>Number of channels to record</td>
+  </tr>
+  <tr>
+    <td><tt>-g,--gnuplot</tt></td>
+    <td>Switch</td>
+    <td>Output the file in a GNUPlot-friendly format rather than a CSV</td>
+  </tr>
+  <tr>
+    <td><tt>-c,--config</tt></td>
+    <td>String</td>
+    <td>Use Config file, default config.ini</td>
   </tr>
   <tr>
     <td><tt>-o,--outfile</tt></td>
@@ -83,11 +93,16 @@ Record data from 3 different sources the first as raw data, Celsius Temperature 
 raspberrypi-data-acq $ sudo python ./collectdata.py -c 3 -t raw ctemp ctemp
 ```
 
-```sudo apt-get install usbmount```
-Configure in /etc/usbmount/usbmount.conf
-$ sudo umount /dev/sda1
-$ sudo mkfs.ext4 /dev/sda1
-$ sudo chown pi.pi /media/usb0/
+## Pi Configuration
+usbmount is used to automount a USB stick when it is plugged in, install the package:
+```
+sudo apt-get install usbmount
+```
+
+Configuration in /etc/usbmount/usbmount.conf
+
+Files are then by default dropped in ```/media/usb0```
+
 
 ## License and Authors
 
