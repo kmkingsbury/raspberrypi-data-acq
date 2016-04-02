@@ -1,6 +1,7 @@
 # raspberrypi-data-acq
 
 Scripts for using a Raspberry Pi 2 B+ as a data acquisition box.
+Instructable for this project: http://www.instructables.com/id/Scrappy-Science-Caddy
 
 ## Supported Platforms
 
